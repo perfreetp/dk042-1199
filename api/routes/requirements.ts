@@ -12,6 +12,43 @@ import type { Requirement } from '../types/index.js';
 
 const router = express.Router();
 
+router.get('/hospitals', (_req: Request, res: Response) => {
+  res.json({
+    code: 0,
+    message: 'success',
+    data: hospitals,
+  });
+});
+
+router.get('/departments', (req: Request, res: Response) => {
+  const { hospitalId } = req.query;
+  let filtered = departments;
+  if (hospitalId) {
+    filtered = departments.filter(d => d.hospitalId === hospitalId);
+  }
+  res.json({
+    code: 0,
+    message: 'success',
+    data: filtered,
+  });
+});
+
+router.get('/devices', (_req: Request, res: Response) => {
+  res.json({
+    code: 0,
+    message: 'success',
+    data: devices,
+  });
+});
+
+router.get('/users', (_req: Request, res: Response) => {
+  res.json({
+    code: 0,
+    message: 'success',
+    data: users,
+  });
+});
+
 router.get('/', (req: Request, res: Response) => {
   const {
     hospital,
@@ -73,25 +110,6 @@ router.get('/', (req: Request, res: Response) => {
   });
 });
 
-router.get('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const requirement = getRequirementById(id);
-
-  if (!requirement) {
-    return res.status(404).json({
-      code: 404,
-      message: 'Requirement not found',
-      data: null,
-    });
-  }
-
-  res.json({
-    code: 0,
-    message: 'success',
-    data: requirement,
-  });
-});
-
 router.post('/', (req: Request, res: Response) => {
   const data = req.body as Partial<Requirement>;
   const now = new Date().toISOString();
@@ -133,6 +151,25 @@ router.post('/', (req: Request, res: Response) => {
   });
 });
 
+router.get('/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const requirement = getRequirementById(id);
+
+  if (!requirement) {
+    return res.status(404).json({
+      code: 404,
+      message: 'Requirement not found',
+      data: null,
+    });
+  }
+
+  res.json({
+    code: 0,
+    message: 'success',
+    data: requirement,
+  });
+});
+
 router.put('/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const data = req.body as Partial<Requirement>;
@@ -167,43 +204,6 @@ router.get('/:id/timeline', (req: Request, res: Response) => {
     code: 0,
     message: 'success',
     data: timeline,
-  });
-});
-
-router.get('/hospitals', (_req: Request, res: Response) => {
-  res.json({
-    code: 0,
-    message: 'success',
-    data: hospitals,
-  });
-});
-
-router.get('/departments', (req: Request, res: Response) => {
-  const { hospitalId } = req.query;
-  let filtered = departments;
-  if (hospitalId) {
-    filtered = departments.filter(d => d.hospitalId === hospitalId);
-  }
-  res.json({
-    code: 0,
-    message: 'success',
-    data: filtered,
-  });
-});
-
-router.get('/devices', (_req: Request, res: Response) => {
-  res.json({
-    code: 0,
-    message: 'success',
-    data: devices,
-  });
-});
-
-router.get('/users', (_req: Request, res: Response) => {
-  res.json({
-    code: 0,
-    message: 'success',
-    data: users,
   });
 });
 
