@@ -14,14 +14,15 @@ router.get('/:requirementId', (req: Request, res: Response) => {
   const communications = getRdCommunicationsByRequirementId(requirementId);
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: communications,
   });
 });
 
 router.post('/:requirementId', (req: Request, res: Response) => {
   const { requirementId } = req.params;
-  const data = req.body as Omit<RdCommunication, 'id' | 'requirementId' | 'responseTime' | 'responder'>;
+  const data = req.body as Omit<RdCommunication, 'id' | 'requirementId' | 'responseTime'> & { responder?: string };
 
   const now = new Date().toISOString();
   const rdId = `rd${rdCommunications.length + 1}`;
@@ -31,7 +32,7 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     requirementId,
     ...data,
     responseTime: now,
-    responder: '陈研发',
+    responder: data.responder || '陈研发',
   };
 
   rdCommunications.push(newCommunication);
@@ -48,13 +49,14 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     id: `t${timelines.length + 1}`,
     requirementId,
     type: 'rd-reply',
-    operator: '陈研发',
+    operator: data.responder || '陈研发',
     time: now,
     content: `研发答复：${data.content.substring(0, 30)}...`,
   });
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: newCommunication,
   });
 });

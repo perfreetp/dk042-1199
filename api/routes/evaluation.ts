@@ -13,22 +13,16 @@ router.get('/:requirementId', (req: Request, res: Response) => {
   const { requirementId } = req.params;
   const evaluation = getEvaluationByRequirementId(requirementId);
 
-  if (!evaluation) {
-    return res.json({
-      success: true,
-      data: null,
-    });
-  }
-
   res.json({
-    success: true,
-    data: evaluation,
+    code: 0,
+    message: 'success',
+    data: evaluation || null,
   });
 });
 
 router.post('/:requirementId', (req: Request, res: Response) => {
   const { requirementId } = req.params;
-  const data = req.body as Omit<Evaluation, 'id' | 'requirementId' | 'evaluateTime' | 'evaluator'>;
+  const data = req.body as Omit<Evaluation, 'id' | 'requirementId' | 'evaluateTime'> & { evaluator?: string };
 
   const now = new Date().toISOString();
   const evalId = `eval${evaluations.length + 1}`;
@@ -38,7 +32,7 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     requirementId,
     ...data,
     evaluateTime: now,
-    evaluator: '王经理',
+    evaluator: data.evaluator || '王经理',
   };
 
   const existingIndex = evaluations.findIndex(e => e.requirementId === requirementId);
@@ -67,7 +61,7 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     id: `t${timelines.length + 1}`,
     requirementId,
     type: 'evaluate',
-    operator: '王经理',
+    operator: data.evaluator || '王经理',
     time: now,
     content: `评估完成，优先级：${data.priority === 'critical' ? '紧急' : data.priority === 'high' ? '高' : data.priority === 'medium' ? '中' : '低'}`,
   });
@@ -82,7 +76,8 @@ router.post('/:requirementId', (req: Request, res: Response) => {
   });
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: existingIndex !== -1 ? evaluations[existingIndex] : newEvaluation,
   });
 });

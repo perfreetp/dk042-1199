@@ -14,14 +14,15 @@ router.get('/:requirementId', (req: Request, res: Response) => {
   const followupList = getFollowupsByRequirementId(requirementId);
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: followupList,
   });
 });
 
 router.post('/:requirementId', (req: Request, res: Response) => {
   const { requirementId } = req.params;
-  const data = req.body as Omit<Followup, 'id' | 'requirementId' | 'createdAt' | 'operator'>;
+  const data = req.body as Omit<Followup, 'id' | 'requirementId' | 'createdAt'> & { operator?: string };
 
   const now = new Date().toISOString();
   const fId = `f${followups.length + 1}`;
@@ -30,7 +31,7 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     id: fId,
     requirementId,
     ...data,
-    operator: '孙客服',
+    operator: data.operator || '孙客服',
     createdAt: now,
   };
 
@@ -49,13 +50,14 @@ router.post('/:requirementId', (req: Request, res: Response) => {
     id: `t${timelines.length + 1}`,
     requirementId,
     type: 'followup',
-    operator: '孙客服',
+    operator: data.operator || '孙客服',
     time: now,
     content: `客户跟进：${data.content.substring(0, 30)}...`,
   });
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: newFollowup,
   });
 });
@@ -67,8 +69,9 @@ router.post('/:requirementId/close', (req: Request, res: Response) => {
   const reqIndex = requirements.findIndex(r => r.id === requirementId);
   if (reqIndex === -1) {
     return res.status(404).json({
-      success: false,
-      error: 'Requirement not found',
+      code: 404,
+      message: 'Requirement not found',
+      data: null,
     });
   }
 
@@ -88,7 +91,8 @@ router.post('/:requirementId/close', (req: Request, res: Response) => {
   });
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: requirements[reqIndex],
   });
 });

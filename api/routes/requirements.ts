@@ -21,6 +21,8 @@ router.get('/', (req: Request, res: Response) => {
     priority,
     category,
     keyword,
+    page = 1,
+    pageSize = 100,
   } = req.query;
 
   let filtered = [...requirements];
@@ -53,9 +55,21 @@ router.get('/', (req: Request, res: Response) => {
     );
   }
 
+  const total = filtered.length;
+  const pageNum = Number(page);
+  const pageSizeNum = Number(pageSize);
+  const start = (pageNum - 1) * pageSizeNum;
+  const items = filtered.slice(start, start + pageSizeNum);
+
   res.json({
-    success: true,
-    data: filtered,
+    code: 0,
+    message: 'success',
+    data: {
+      items,
+      total,
+      page: pageNum,
+      pageSize: pageSizeNum,
+    },
   });
 });
 
@@ -65,13 +79,15 @@ router.get('/:id', (req: Request, res: Response) => {
 
   if (!requirement) {
     return res.status(404).json({
-      success: false,
-      error: 'Requirement not found',
+      code: 404,
+      message: 'Requirement not found',
+      data: null,
     });
   }
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: requirement,
   });
 });
@@ -111,7 +127,8 @@ router.post('/', (req: Request, res: Response) => {
   requirements.unshift(newRequirement);
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: newRequirement,
   });
 });
@@ -123,8 +140,9 @@ router.put('/:id', (req: Request, res: Response) => {
   const index = requirements.findIndex(r => r.id === id);
   if (index === -1) {
     return res.status(404).json({
-      success: false,
-      error: 'Requirement not found',
+      code: 404,
+      message: 'Requirement not found',
+      data: null,
     });
   }
 
@@ -135,7 +153,8 @@ router.put('/:id', (req: Request, res: Response) => {
   };
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: requirements[index],
   });
 });
@@ -145,35 +164,45 @@ router.get('/:id/timeline', (req: Request, res: Response) => {
   const timeline = getTimelineByRequirementId(id);
 
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: timeline,
   });
 });
 
-router.get('/hospitals/list', (_req: Request, res: Response) => {
+router.get('/hospitals', (_req: Request, res: Response) => {
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: hospitals,
   });
 });
 
-router.get('/departments/list', (_req: Request, res: Response) => {
+router.get('/departments', (req: Request, res: Response) => {
+  const { hospitalId } = req.query;
+  let filtered = departments;
+  if (hospitalId) {
+    filtered = departments.filter(d => d.hospitalId === hospitalId);
+  }
   res.json({
-    success: true,
-    data: departments,
+    code: 0,
+    message: 'success',
+    data: filtered,
   });
 });
 
-router.get('/devices/list', (_req: Request, res: Response) => {
+router.get('/devices', (_req: Request, res: Response) => {
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: devices,
   });
 });
 
-router.get('/users/list', (_req: Request, res: Response) => {
+router.get('/users', (_req: Request, res: Response) => {
   res.json({
-    success: true,
+    code: 0,
+    message: 'success',
     data: users,
   });
 });

@@ -120,6 +120,7 @@ export interface DeadlineItem {
   deadline: string;
   daysLeft: number;
   isOverdue: boolean;
+  status?: RequirementStatus;
 }
 
 export interface Hospital {

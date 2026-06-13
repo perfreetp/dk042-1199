@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   ClipboardCheck,
@@ -23,6 +23,7 @@ import TimelineView from '@/components/Timeline';
 export default function RequirementDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [requirement, setRequirement] = useState<Requirement | null>(null);
   const [timeline, setTimeline] = useState<TimelineType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function RequirementDetail() {
   useEffect(() => {
     if (!id) return;
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [reqRes, timelineRes] = await Promise.all([
           requirementApi.getById(id),
@@ -44,7 +46,7 @@ export default function RequirementDetail() {
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, location.key]);
 
   if (loading) {
     return (

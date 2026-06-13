@@ -31,24 +31,39 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBaseData = async () => {
       try {
-        const [hospRes, depRes, devRes, userRes] = await Promise.all([
+        const [hospRes, devRes, userRes] = await Promise.all([
           commonApi.getHospitals(),
-          commonApi.getDepartments(),
           commonApi.getDevices(),
           commonApi.getUsers(),
         ]);
         setHospitals(hospRes.data.data);
-        setDepartments(depRes.data.data);
         setDevices(devRes.data.data);
         setUsers(userRes.data.data);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       }
     };
-    fetchData();
+    fetchBaseData();
   }, []);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const selectedHospital = hospitals.find((h) => h.name === formData.hospital);
+        const depRes = await commonApi.getDepartments(selectedHospital?.id);
+        setDepartments(depRes.data.data);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+      }
+    };
+    if (formData.hospital && hospitals.length > 0) {
+      fetchDepartments();
+    } else {
+      setDepartments([]);
+    }
+  }, [formData.hospital, hospitals]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -89,9 +104,7 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
     setPhotos(photos.filter((_, i) => i !== index));
   };
 
-  const filteredDepartments = departments.filter(
-    (d) => !formData.hospital || d.hospitalId === hospitals.find((h) => h.name === formData.hospital)?.id
-  );
+  const filteredDepartments = departments;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -215,7 +215,7 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <PriorityBadge priority="high" />
+                      {item.status ? <StatusBadge status={item.status} /> : '-'}
                     </td>
                     <td className="py-3 px-4">
                       <button

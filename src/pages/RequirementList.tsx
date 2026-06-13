@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Plus, Filter, RotateCcw, Eye, ClipboardCheck, MessageSquare, Phone, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Filter, RotateCcw, Eye, ClipboardCheck, MessageSquare, Phone, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { requirementApi, commonApi } from '@/api';
-import type { Requirement, Hospital, Device, RequirementStatus, Priority, RequirementCategory } from '@/types';
+import type { Requirement, Hospital, Department, Device, RequirementStatus, Priority, RequirementCategory } from '@/types';
 import { formatDate, formatDateTime, getImpactLabel, getImpactColor } from '@/utils';
 import useStore from '@/store/useStore';
 import StatusBadge from '@/components/StatusBadge';
@@ -15,6 +15,7 @@ export default function RequirementList() {
   const { filters, setFilters, resetFilters } = useStore();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -23,23 +24,51 @@ export default function RequirementList() {
   const [showFilters, setShowFilters] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBaseData = async () => {
       try {
-        const [reqRes, hospRes, devRes] = await Promise.all([
-          requirementApi.list(filters),
+        const [hospRes, devRes] = await Promise.all([
           commonApi.getHospitals(),
           commonApi.getDevices(),
         ]);
-        setRequirements(reqRes.data.data.items);
         setHospitals(hospRes.data.data);
         setDevices(devRes.data.data);
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Failed to fetch base data:', error);
+      }
+    };
+    fetchBaseData();
+  }, []);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const selectedHospital = hospitals.find((h) => h.name === filters.hospital);
+        const depRes = await commonApi.getDepartments(selectedHospital?.id);
+        setDepartments(depRes.data.data);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+      }
+    };
+    if (filters.hospital !== 'all' && hospitals.length > 0) {
+      fetchDepartments();
+    } else {
+      setDepartments([]);
+    }
+  }, [filters.hospital, hospitals]);
+
+  useEffect(() => {
+    const fetchRequirements = async () => {
+      setLoading(true);
+      try {
+        const reqRes = await requirementApi.list(filters);
+        setRequirements(reqRes.data.data.items);
+      } catch (error) {
+        console.error('Failed to fetch requirements:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchRequirements();
   }, [filters]);
 
   const sortedRequirements = [...requirements].sort((a, b) => {
@@ -88,18 +117,30 @@ export default function RequirementList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h3 className="text-xl font-semibold text-slate-800">客户需求台账</h3>
           <p className="text-sm text-slate-500 mt-1">共 {requirements.length} 条需求记录</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          新建需求
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={filters.keyword}
+              onChange={(e) => setFilters({ keyword: e.target.value })}
+              placeholder="搜索需求编号、标题..."
+              className="pl-9 pr-4 py-2 w-64 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            新建需求
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm">
@@ -132,13 +173,29 @@ export default function RequirementList() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">医院</label>
                 <select
                   value={filters.hospital}
-                  onChange={(e) => setFilters({ hospital: e.target.value })}
+                  onChange={(e) => setFilters({ hospital: e.target.value, department: 'all' })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">全部医院</option>
                   {hospitals.map((h) => (
                     <option key={h.id} value={h.name}>
                       {h.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">科室</label>
+                <select
+                  value={filters.department}
+                  onChange={(e) => setFilters({ department: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={filters.hospital === 'all'}
+                >
+                  <option value="all">全部科室</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.name}>
+                      {d.name}
                     </option>
                   ))}
                 </select>
