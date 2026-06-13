@@ -67,6 +67,9 @@ export default function Evaluation() {
 
         if (evalRes.data.data) {
           const evalData = evalRes.data.data;
+          const assigneeValid = userRes.data.data.some(
+            (u) => u.department === evalData.assigneeDept && u.name === evalData.assignee
+          );
           setFormData({
             category: evalData.category,
             impactScope: evalData.impactScope,
@@ -74,7 +77,7 @@ export default function Evaluation() {
             difficulty: evalData.difficulty,
             businessValue: evalData.businessValue,
             priority: evalData.priority,
-            assignee: evalData.assignee,
+            assignee: assigneeValid ? evalData.assignee : '',
             assigneeDept: evalData.assigneeDept,
             targetVersion: evalData.targetVersion,
             promiseDate: evalData.promiseDate.split('T')[0],
@@ -319,6 +322,9 @@ export default function Evaluation() {
                     </option>
                   ))}
               </select>
+              {users.filter((u) => u.department === formData.assigneeDept).length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">当前责任部门下暂无可选人员，请先切换部门</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">

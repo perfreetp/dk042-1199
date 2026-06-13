@@ -23,47 +23,47 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
     submitter: '',
   });
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [baseLoading, setBaseLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchBaseData = async () => {
       try {
-        const [hospRes, devRes, userRes] = await Promise.all([
+        const [hospRes, depRes, devRes, userRes] = await Promise.all([
           commonApi.getHospitals(),
+          commonApi.getDepartments(),
           commonApi.getDevices(),
           commonApi.getUsers(),
         ]);
         setHospitals(hospRes.data.data);
+        setAllDepartments(depRes.data.data);
+        setDepartments(depRes.data.data);
         setDevices(devRes.data.data);
         setUsers(userRes.data.data);
       } catch (error) {
         console.error('Failed to fetch data:', error);
+      } finally {
+        setBaseLoading(false);
       }
     };
     fetchBaseData();
   }, []);
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const selectedHospital = hospitals.find((h) => h.name === formData.hospital);
-        const depRes = await commonApi.getDepartments(selectedHospital?.id);
-        setDepartments(depRes.data.data);
-      } catch (error) {
-        console.error('Failed to fetch departments:', error);
-      }
-    };
-    if (formData.hospital && hospitals.length > 0) {
-      fetchDepartments();
+    if (formData.hospital) {
+      const selectedHospital = hospitals.find((h) => h.name === formData.hospital);
+      const filtered = allDepartments.filter((d) => d.hospitalId === selectedHospital?.id);
+      setDepartments(filtered.length > 0 ? filtered : allDepartments);
     } else {
-      setDepartments([]);
+      setDepartments(allDepartments);
     }
-  }, [formData.hospital, hospitals]);
+  }, [formData.hospital, hospitals, allDepartments]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -110,6 +110,11 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {baseLoading && (
+          <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+          </div>
+        )}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <h3 className="text-lg font-semibold text-slate-800">新建客户需求</h3>
           <button
@@ -155,7 +160,6 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
                   'w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                   errors.department ? 'border-red-300' : 'border-slate-300'
                 )}
-                disabled={!formData.hospital}
               >
                 <option value="">请选择科室</option>
                 {filteredDepartments.map((d) => (

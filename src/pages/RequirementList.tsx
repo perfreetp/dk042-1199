@@ -102,25 +102,22 @@ export default function RequirementList() {
   const handleCreateSuccess = (newReq: Requirement) => {
     setShowModal(false);
 
-    setFilters({
+    const alignedFilters = {
       keyword: '',
       status: 'all',
       priority: 'all',
       category: 'all',
-      department: filters.hospital === newReq.hospital ? filters.department : 'all',
-    });
+      hospital: 'all',
+      department: 'all',
+      deviceModel: 'all',
+    };
+    setFilters(alignedFilters);
 
     setHighlightId(newReq.id);
     setTimeout(() => setHighlightId(null), 5000);
 
     const fetchData = async () => {
-      const reqRes = await requirementApi.list({
-        ...filters,
-        keyword: '',
-        status: 'all',
-        priority: 'all',
-        category: 'all',
-      });
+      const reqRes = await requirementApi.list(alignedFilters);
       setRequirements(reqRes.data.data.items);
     };
     fetchData();
