@@ -281,7 +281,17 @@ export default function Evaluation() {
               </label>
               <select
                 value={formData.assigneeDept}
-                onChange={(e) => setFormData({ ...formData, assigneeDept: e.target.value })}
+                onChange={(e) => {
+                  const newDept = e.target.value;
+                  const stillValid = users.some(
+                    (u) => u.department === newDept && u.name === formData.assignee
+                  );
+                  setFormData({
+                    ...formData,
+                    assigneeDept: newDept,
+                    assignee: stillValid ? formData.assignee : '',
+                  });
+                }}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {departments.map((dept) => (

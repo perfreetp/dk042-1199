@@ -15,46 +15,47 @@ export default function RequirementList() {
   const { filters, setFilters, resetFilters } = useStore();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
+  const [baseDataLoading, setBaseDataLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [sortField, setSortField] = useState<string>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showFilters, setShowFilters] = useState(true);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBaseData = async () => {
       try {
-        const [hospRes, devRes] = await Promise.all([
+        const [hospRes, depRes, devRes] = await Promise.all([
           commonApi.getHospitals(),
+          commonApi.getDepartments(),
           commonApi.getDevices(),
         ]);
         setHospitals(hospRes.data.data);
+        setAllDepartments(depRes.data.data);
+        setDepartments(depRes.data.data);
         setDevices(devRes.data.data);
       } catch (error) {
         console.error('Failed to fetch base data:', error);
+      } finally {
+        setBaseDataLoading(false);
       }
     };
     fetchBaseData();
   }, []);
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const selectedHospital = hospitals.find((h) => h.name === filters.hospital);
-        const depRes = await commonApi.getDepartments(selectedHospital?.id);
-        setDepartments(depRes.data.data);
-      } catch (error) {
-        console.error('Failed to fetch departments:', error);
-      }
-    };
-    if (filters.hospital !== 'all' && hospitals.length > 0) {
-      fetchDepartments();
+    if (filters.hospital !== 'all') {
+      const selectedHospital = hospitals.find((h) => h.name === filters.hospital);
+      const filtered = allDepartments.filter((d) => d.hospitalId === selectedHospital?.id);
+      setDepartments(filtered.length > 0 ? filtered : allDepartments);
     } else {
-      setDepartments([]);
+      setDepartments(allDepartments);
     }
-  }, [filters.hospital, hospitals]);
+  }, [filters.hospital, hospitals, allDepartments]);
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -98,16 +99,34 @@ export default function RequirementList() {
     );
   };
 
-  const handleCreateSuccess = () => {
+  const handleCreateSuccess = (newReq: Requirement) => {
     setShowModal(false);
+
+    setFilters({
+      keyword: '',
+      status: 'all',
+      priority: 'all',
+      category: 'all',
+      department: filters.hospital === newReq.hospital ? filters.department : 'all',
+    });
+
+    setHighlightId(newReq.id);
+    setTimeout(() => setHighlightId(null), 5000);
+
     const fetchData = async () => {
-      const reqRes = await requirementApi.list(filters);
+      const reqRes = await requirementApi.list({
+        ...filters,
+        keyword: '',
+        status: 'all',
+        priority: 'all',
+        category: 'all',
+      });
       setRequirements(reqRes.data.data.items);
     };
     fetchData();
   };
 
-  if (loading) {
+  if (baseDataLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -190,7 +209,6 @@ export default function RequirementList() {
                   value={filters.department}
                   onChange={(e) => setFilters({ department: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={filters.hospital === 'all'}
                 >
                   <option value="all">全部科室</option>
                   {departments.map((d) => (
@@ -262,7 +280,12 @@ export default function RequirementList() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+          )}
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
@@ -316,7 +339,9 @@ export default function RequirementList() {
                 sortedRequirements.map((req) => (
                   <tr
                     key={req.id}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${
+                      highlightId === req.id ? 'bg-amber-50 hover:bg-amber-100' : ''
+                    }`}
                   >
                     <td className="py-4 px-4 text-sm font-mono text-slate-600">{req.reqNo}</td>
                     <td className="py-4 px-4">

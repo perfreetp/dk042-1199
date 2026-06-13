@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Camera } from 'lucide-react';
 import { requirementApi, commonApi } from '@/api';
-import type { Hospital, Department, Device, User, ImpactLevel } from '@/types';
+import type { Hospital, Department, Device, User, ImpactLevel, Requirement } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CreateRequirementModalProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newReq: Requirement) => void;
 }
 
 export default function CreateRequirementModal({ onClose, onSuccess }: CreateRequirementModalProps) {
@@ -83,11 +83,11 @@ export default function CreateRequirementModal({ onClose, onSuccess }: CreateReq
 
     setLoading(true);
     try {
-      await requirementApi.create({
+      const res = await requirementApi.create({
         ...formData,
         photos,
       });
-      onSuccess();
+      onSuccess(res.data.data);
     } catch (error) {
       console.error('Failed to create requirement:', error);
     } finally {
